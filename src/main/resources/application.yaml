@@ -4,11 +4,6 @@ spring:
     username: soufiane
     password: password
     driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 600000
   jpa:
     hibernate:
       ddl-auto: update
@@ -23,6 +18,4 @@ spring:
   logging:
     level:
       org.springframework.data.jpa.repository.query: debug
-      com.progressoft.FxDealsWarehouse: trace
       org.hibernate.SQL: debug
-      org.hibernate.type.descriptor.sql.BasicBinder: trace

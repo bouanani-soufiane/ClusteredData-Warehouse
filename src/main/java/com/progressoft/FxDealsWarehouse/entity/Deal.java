@@ -13,25 +13,24 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Currency;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
-@RequiredArgsConstructor
+@AllArgsConstructor
 @Table(name = "deals")
 public class Deal {
 
     @Id
     private String id;
 
-    @Column(name = "from_currency", nullable = false, length=3)
+    @Column(name = "from_currency", nullable = false, length = 3)
     @Size(min = 3, max = 3)
     @NotNull
     private String fromCurrency;
 
-    @Column(name = "to_currency", nullable = false, length=3)
+    @Column(name = "to_currency", nullable = false, length = 3)
     @Size(min = 3, max = 3)
     @NotNull
     private String toCurrency;
