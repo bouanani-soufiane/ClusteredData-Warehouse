@@ -3,11 +3,13 @@ package com.progressoft.FxDealsWarehouse;
 import com.progressoft.FxDealsWarehouse.dto.DealRequestDto;
 import com.progressoft.FxDealsWarehouse.dto.DealResponseDto;
 import com.progressoft.FxDealsWarehouse.entity.Deal;
+import com.progressoft.FxDealsWarehouse.exception.CurrencyNotAvailableException;
 import com.progressoft.FxDealsWarehouse.exception.InvalidCurrencyException;
 import com.progressoft.FxDealsWarehouse.exception.RequestAlreadyExistException;
 import com.progressoft.FxDealsWarehouse.mapper.DealMapper;
 import com.progressoft.FxDealsWarehouse.repository.DealRepository;
 import com.progressoft.FxDealsWarehouse.service.DefaultDealService;
+import com.progressoft.FxDealsWarehouse.util.CurrencyHolder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -27,7 +29,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-
 @ExtendWith(MockitoExtension.class)
 class DefaultServiceTest {
 
@@ -36,6 +37,9 @@ class DefaultServiceTest {
 
     @Mock
     private DealMapper dealMapper;
+
+    @Mock
+    private CurrencyHolder currencyHolder;
 
     @InjectMocks
     private DefaultDealService dealService;
@@ -46,23 +50,23 @@ class DefaultServiceTest {
     private final LocalDateTime now = LocalDateTime.now();
 
     @BeforeEach
-    void setUp () {
+    void setUp() {
         dealRequestDto = new DealRequestDto(
                 "DEAL001",
-                "MAD",
+                "USD",
                 "EUR",
                 BigDecimal.valueOf(1000.00)
         );
 
         deal = new Deal("DEAL001",
-                "MAD",
+                "USD",
                 "EUR",
                 now,
                 BigDecimal.valueOf(1000.00)
         );
 
         dealResponseDto = new DealResponseDto("DEAL001",
-                "MAD",
+                "USD",
                 "EUR",
                 now,
                 BigDecimal.valueOf(1000.00)
@@ -70,12 +74,15 @@ class DefaultServiceTest {
     }
 
     @Nested
-    @DisplayName("Save Deal Tests")
-    class SaveDealTests {
+    @DisplayName("Deal Validation and Save Tests")
+    class DealValidationAndSaveTests {
 
         @Test
-        @DisplayName("Should successfully save a new deal")
-        void shouldSaveNewDeal () {
+        @DisplayName("Should successfully save when all validations pass")
+        void shouldSaveWhenAllValidationsPass() {
+
+            given(currencyHolder.exists("USD")).willReturn(true);
+            given(currencyHolder.exists("EUR")).willReturn(true);
             given(dealRepository.existsById(dealRequestDto.id())).willReturn(false);
             given(dealMapper.toEntity(dealRequestDto)).willReturn(deal);
             given(dealRepository.save(deal)).willReturn(deal);
@@ -84,51 +91,101 @@ class DefaultServiceTest {
             DealResponseDto result = dealService.save(dealRequestDto);
 
             assertThat(result).isNotNull();
-            assertThat(result.id()).isEqualTo(dealRequestDto.id());
-            assertThat(result.fromCurrency()).isEqualTo(dealRequestDto.fromCurrency());
-            assertThat(result.toCurrency()).isEqualTo(dealRequestDto.toCurrency());
-            assertThat(result.dealAmount()).isEqualTo(dealRequestDto.dealAmount());
+            assertThat(result.id()).isEqualTo("DEAL001");
+            assertThat(result.fromCurrency()).isEqualTo("USD");
+            assertThat(result.toCurrency()).isEqualTo("EUR");
+            assertThat(result.dealAmount()).isEqualTo(BigDecimal.valueOf(1000.00));
 
-            verify(dealRepository).existsById(dealRequestDto.id());
+            verify(currencyHolder).exists("USD");
+            verify(currencyHolder).exists("EUR");
+            verify(dealRepository).existsById("DEAL001");
             verify(dealMapper).toEntity(dealRequestDto);
             verify(dealRepository).save(deal);
             verify(dealMapper).toResponseEntity(deal);
         }
 
         @Test
-        @DisplayName("Should throw DuplicateDealIdException when deal ID already exists")
-        void shouldThrowExceptionForDuplicateDealId () {
-            given(dealRepository.existsById(dealRequestDto.id())).willReturn(true);
+        @DisplayName("Should throw RequestAlreadyExistException for duplicate deal ID")
+        void shouldThrowExceptionForDuplicateDealId() {
 
-            assertThrows(RequestAlreadyExistException.class,
-                    () -> dealService.save(dealRequestDto),
-                    "Should throw DuplicateDealIdException");
+            given(currencyHolder.exists("USD")).willReturn(true);
+            given(currencyHolder.exists("EUR")).willReturn(true);
+            given(dealRepository.existsById("DEAL001")).willReturn(true);
 
-            verify(dealRepository).existsById(dealRequestDto.id());
-            verify(dealRepository, never()).save(any(Deal.class));
+
+            RequestAlreadyExistException exception = assertThrows(RequestAlreadyExistException.class,
+                    () -> dealService.save(dealRequestDto));
+
+            assertThat(exception.getMessage()).isEqualTo("This request already exists");
+            verify(dealRepository).existsById("DEAL001");
+            verify(dealRepository, never()).save(any());
         }
 
         @Test
-        @DisplayName("Should throw InvalidCurrencyException when to and from currencies are the same")
-        void shouldThrowExceptionWhenCurrenciesAreSame () {
-            DealRequestDto invalidDealRequest = new DealRequestDto(
+        @DisplayName("Should throw InvalidCurrencyException for same currencies")
+        void shouldThrowExceptionForSameCurrencies() {
+
+            DealRequestDto sameCurrencyDeal = new DealRequestDto(
                     "DEAL002",
-                    "EUR",
-                    "EUR",
-                    BigDecimal.valueOf(1000.00));
+                    "USD",
+                    "USD",
+                    BigDecimal.valueOf(1000.00)
+            );
+
 
             InvalidCurrencyException exception = assertThrows(InvalidCurrencyException.class,
-                    () -> dealService.save(invalidDealRequest),
-                    "Should throw InvalidCurrencyException when currencies are the same");
+                    () -> dealService.save(sameCurrencyDeal));
 
             assertThat(exception.getMessage())
-                    .isEqualTo("Invalid deal: fromCurrency [EUR] and toCurrency [EUR] cannot be the same.");
-
+                    .isEqualTo("Invalid deal: fromCurrency [USD] and toCurrency [USD] cannot be the same.");
+            verify(currencyHolder, never()).exists(any());
             verify(dealRepository, never()).existsById(any());
-            verify(dealRepository, never()).save(any(Deal.class));
+            verify(dealRepository, never()).save(any());
         }
 
+        @Test
+        @DisplayName("Should throw CurrencyNotAvailableException for invalid fromCurrency")
+        void shouldThrowExceptionForInvalidFromCurrency() {
 
+            DealRequestDto invalidFromCurrencyDeal = new DealRequestDto(
+                    "DEAL003",
+                    "XXX",
+                    "EUR",
+                    BigDecimal.valueOf(1000.00)
+            );
+            given(currencyHolder.exists("XXX")).willReturn(false);
+
+
+            CurrencyNotAvailableException exception = assertThrows(CurrencyNotAvailableException.class,
+                    () -> dealService.save(invalidFromCurrencyDeal));
+
+            assertThat(exception.getMessage()).isEqualTo("Currency not available: XXX");
+            verify(currencyHolder).exists("XXX");
+            verify(currencyHolder, never()).exists("EUR");
+            verify(dealRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Should throw CurrencyNotAvailableException for invalid toCurrency")
+        void shouldThrowExceptionForInvalidToCurrency() {
+
+            DealRequestDto invalidToCurrencyDeal = new DealRequestDto(
+                    "DEAL004",
+                    "USD",
+                    "XXX",
+                    BigDecimal.valueOf(1000.00)
+            );
+            given(currencyHolder.exists("USD")).willReturn(true);
+            given(currencyHolder.exists("XXX")).willReturn(false);
+
+
+            CurrencyNotAvailableException exception = assertThrows(CurrencyNotAvailableException.class,
+                    () -> dealService.save(invalidToCurrencyDeal));
+
+            assertThat(exception.getMessage()).isEqualTo("Currency not available: XXX");
+            verify(currencyHolder).exists("USD");
+            verify(currencyHolder).exists("XXX");
+            verify(dealRepository, never()).save(any());
+        }
     }
-
 }
