@@ -1,4 +1,4 @@
-package com.progressoft.FxDealsWarehouse.util;
+package com.progressoft.FxDealsWarehouse.currencystore;
 
 import org.springframework.stereotype.Component;
 

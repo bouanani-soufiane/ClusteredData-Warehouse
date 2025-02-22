@@ -1,4 +1,4 @@
-package com.progressoft.FxDealsWarehouse.util;
+package com.progressoft.FxDealsWarehouse.currencystore;
 
 import java.nio.file.Path;
 import java.util.Set;

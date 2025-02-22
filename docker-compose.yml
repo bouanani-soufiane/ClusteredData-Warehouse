@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -16,7 +14,6 @@ services:
       - db
     volumes:
       - maven-repo:/root/.m2
-
   db:
     image: postgres:latest
     environment:

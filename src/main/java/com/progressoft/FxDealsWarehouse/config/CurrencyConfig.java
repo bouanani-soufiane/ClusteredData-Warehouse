@@ -1,7 +1,7 @@
 package com.progressoft.FxDealsWarehouse.config;
 
-import com.progressoft.FxDealsWarehouse.util.CsvCurrencyHolder;
-import com.progressoft.FxDealsWarehouse.util.FileReader;
+import com.progressoft.FxDealsWarehouse.currencystore.CsvCurrencyHolder;
+import com.progressoft.FxDealsWarehouse.currencystore.FileReader;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
