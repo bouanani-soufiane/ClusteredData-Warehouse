@@ -1,14 +1,20 @@
 # Maven
 target/
 !.mvn/wrapper/maven-wrapper.jar
+.mvn/
 
-# IDE - IntelliJ IDEA
+# Build artifacts
+build/
+dist/
+
+# IntelliJ IDEA
 .idea/
 *.iws
 *.iml
 *.ipr
+out/
 
-# IDE - Eclipse/STS
+# Eclipse/STS
 .apt_generated
 .classpath
 .factorypath
@@ -17,19 +23,18 @@ target/
 .springBeans
 .sts4-cache
 
-# IDE - VS Code
+# VS Code
 .vscode/
 
-# IDE - NetBeans
+# NetBeans
 /nbproject/private/
 /nbbuild/
-/dist/
 /nbdist/
 /.nb-gradle/
-build/
 
-# OS specific
+# OS-specific files
 .DS_Store
+Thumbs.db
 *.swp
 *~
 
@@ -37,9 +42,9 @@ build/
 logs/
 *.log
 
-# Application properties (if containing sensitive data)
-# src/main/resources/application-*.yaml
-# src/main/resources/application-*.properties
+# Sensitive configuration files
+src/main/resources/application-*.yaml
+src/main/resources/application-*.properties
 
 # Compiled class files
 *.class
@@ -52,6 +57,15 @@ logs/
 *.zip
 *.tar.gz
 *.rar
+
+# Test reports
+surefire-reports/
+test-classes/
+
+# Generated files
+generated-sources/
+generated-test-sources/
+maven-status/
 
 # Keep Maven wrapper
 !maven-wrapper.jar
